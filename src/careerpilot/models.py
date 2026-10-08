@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -23,9 +25,9 @@ class CareerPath(BaseModel):
     related_roles: list[str]
 
 
-# Defines the supported lookup operations
+# Defines the supported lookup operation
 class LookupRequest(BaseModel):
-    lookup_type: str
+    lookup_type: Literal["career"]
     query: str
 
 
@@ -38,3 +40,9 @@ class CareerAnalysis(BaseModel):
     missing_skills: list[str] = Field(default_factory=list)
     career_explanation: str | None = None
     recommendation: str | None = None
+
+
+# Defines the input accepted by the CareerPilot agent endpoint
+class AgentRequest(BaseModel):
+    request: str
+    profile: CareerProfile | None = None

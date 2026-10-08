@@ -78,3 +78,51 @@ def requires_human_review(
 
     # Allow stronger recommendations to proceed without review
     return False
+
+
+# Identify explicit tool failures returned by CareerPilot tools
+def is_tool_failure(result: str) -> bool:
+    """Return True when a tool result represents a failed operation."""
+
+    # Tool failures use a predictable prefix
+    return result.startswith("TOOL_ERROR:")
+
+
+# Generate a safe response when a tool fails
+def tool_failure_guardrail(result: str) -> str | None:
+    """Return a safe response instead of allowing the agent to guess."""
+
+    # Allow normal tool results to continue
+    if not is_tool_failure(result):
+        return None
+
+    # Stop the agent from replacing failed data with model-generated information
+    return (
+        "The CareerPilot lookup service is currently unavailable. "
+        "I cannot provide the requested career information without "
+        "a successful lookup."
+    )
+
+
+# Identify when a lookup completed without finding the requested career
+def is_tool_not_found(result: str) -> bool:
+    """Return True when a lookup completed but found no matching record."""
+
+    # Tool not-found results use a predictable prefix
+    return result.startswith("LOOKUP_NOT_FOUND:")
+
+
+# Generate a safe response when structured lookup data is unavailable
+def tool_not_found_guardrail(result: str) -> str | None:
+    """Return a safe response when the requested career does not exist."""
+
+    # Allow normal tool results to continue
+    if not is_tool_not_found(result):
+        return None
+
+    # Prevent the model from inventing missing structured information
+    return (
+        "I couldn't find that career in the CareerPilot knowledge base. "
+        "I won't provide unverified career information as if it came "
+        "from the CareerPilot database."
+    )

@@ -26,3 +26,44 @@ class AgentTracer:
 
         # Display the event immediately
         print(event)
+
+
+        # Trace messages produced by Microsoft Agent Framework
+    def log_framework_message(self, message) -> None:
+        """Record important Agent Framework execution events."""
+
+        # Record the message role
+        self.log(
+            "Framework message received",
+            {"role": message.role},
+        )
+
+        # Inspect each content item in the message
+        for content in message.contents:
+
+            # Record function/tool calls
+            if content.type == "function_call":
+                self.log(
+                    "Tool selected",
+                    {
+                        "tool": content.name,
+                        "arguments": content.arguments,
+                    },
+                )
+
+            # Record tool results
+            elif content.type == "function_result":
+                self.log(
+                    "Tool result received",
+                    {
+                        "result": content.result,
+                        "status": content.additional_properties.get("status"),
+                    },
+                )
+
+            # Record normal text responses
+            elif content.type == "text":
+                self.log(
+                    "Agent response generated",
+                    {"text": content.text},
+                )

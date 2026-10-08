@@ -3,6 +3,12 @@ from unittest.mock import patch
 from careerpilot.models import CareerProfile
 from careerpilot.guardrails import tool_call_guardrail
 from careerpilot.state import AgentState
+from careerpilot.guardrails import (
+    is_tool_failure,
+    tool_failure_guardrail,
+)
+
+
 
 # Create a reusable candidate profile for the evaluation tests
 candidate = CareerProfile(
@@ -174,3 +180,21 @@ def test_low_fit_recommendation_requires_human_review():
 
     # Verify that the career analysis was completed
     assert result.tool_call_count == 3
+
+
+def test_tool_failure_is_detected():
+    # Verify that an explicit tool error is recognized
+    result = "TOOL_ERROR: Career lookup failed: service unavailable"
+
+    assert is_tool_failure(result) is True
+
+
+def test_tool_failure_guardrail_prevents_fallback_answer():
+    # Simulate a failed lookup result
+    result = "TOOL_ERROR: Career lookup failed: service unavailable"
+
+    # The guardrail should provide a safe response
+    response = tool_failure_guardrail(result)
+
+    assert response is not None
+    assert "cannot provide" in response.lower()

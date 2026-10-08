@@ -42,9 +42,11 @@ CAREER_PATHS = [
 def lookup(request: LookupRequest) -> CareerPath | None:
     """Return structured career information based on a lookup request."""
 
-    # Only process career lookups for now
+    # Reject unsupported lookup types explicitly
     if request.lookup_type.lower() != "career":
-        return None
+        raise ValueError(
+            f"Unsupported lookup type: {request.lookup_type}"
+        )
 
     # Search the career knowledge base
     for career in CAREER_PATHS:

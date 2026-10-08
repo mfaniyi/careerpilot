@@ -258,3 +258,48 @@ def test_agent_endpoint_prediction_failure() -> None:
 
     # Verify that human review was not incorrectly triggered
     assert result["human_review_required"] is False
+
+
+def test_agent_endpoint_rejects_missing_request():
+    # Send an invalid request without the required "request" field
+    response = client.post(
+        "/agent",
+        json={
+            "profile": {
+                "name": "Michael",
+                "current_role": "Data Analyst",
+                "years_of_experience": 5,
+                "education": ["MSc GIS"],
+                "skills": ["Python"],
+                "certifications": ["PL-300"],
+                "industry": "Technology",
+                "career_goal": "Become an AI Engineer",
+            }
+        },
+    )
+
+    # FastAPI should reject the request because "request" is required
+    assert response.status_code == 422
+
+
+def test_agent_endpoint_rejects_invalid_profile():
+    # Send an invalid profile with a negative experience value
+    response = client.post(
+        "/agent",
+        json={
+            "request": "How suitable am I for AI Engineer?",
+            "profile": {
+                "name": "Michael",
+                "current_role": "Data Analyst",
+                "years_of_experience": -5,
+                "education": ["MSc GIS"],
+                "skills": ["Python"],
+                "certifications": ["PL-300"],
+                "industry": "Technology",
+                "career_goal": "Become an AI Engineer",
+            },
+        },
+    )
+
+    # Pydantic should reject the invalid years_of_experience value
+    assert response.status_code == 422

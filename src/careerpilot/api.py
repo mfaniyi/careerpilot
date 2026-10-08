@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from careerpilot.ask import AskRequest, ask
 from careerpilot.predict import CareerFitRequest, predict_career_fit
-from careerpilot.models import LookupRequest, CareerProfile
+from careerpilot.models import LookupRequest, CareerProfile, AgentRequest
 from careerpilot.tools import lookup
 from careerpilot.agent import CareerPilotAgent
 
@@ -76,38 +76,20 @@ def lookup_endpoint(request: LookupRequest) -> dict:
 
 # Run a user request through the CareerPilot agent
 @app.post("/agent")
-def agent_endpoint(request: dict) -> dict:
-    """Process a career request through the CareerPilot agent."""
-
-    # Extract the user's request from the JSON body
-    user_request = request.get("request", "")
-
-    # Extract the optional career profile
-    profile_data = request.get("profile")
-
-    # Convert the profile dictionary into the validated Pydantic model
-    profile = (
-        CareerProfile(**profile_data)
-        if profile_data is not None
-        else None
-    )
-
+def agent_endpoint(request: AgentRequest) -> dict:
     # Create the CareerPilot agent
     agent = CareerPilotAgent()
 
-    # Run the agent workflow with the user's profile
+    # Run the agent using the validated request and optional profile
     result = agent.run(
-        request=user_request,
-        profile=profile,
+        request=request.request,
+        profile=request.profile,
     )
 
-    # Return the agent result and execution state
+    # Return the agent result and execution information
     return {
         "response": result.final_response,
         "tool_call_count": result.tool_call_count,
         "human_review_required": result.human_review_required,
-        "tool_steps": [
-            step.model_dump()
-            for step in result.tool_steps
-        ],
+        "tool_steps": [step.model_dump() for step in result.tool_steps],
     }
