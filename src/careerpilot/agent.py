@@ -1,8 +1,10 @@
-from careerpilot.ask import AskRequest, ask
-from careerpilot.predict import CareerFitRequest, predict_career_fit
+# Import libraries for JSON handling, environment variables, and HTTP requests
+import json
+import os
+import httpx
+from careerpilot.predict import CareerFitPrediction
 from careerpilot.state import AgentState
-from careerpilot.tools import lookup
-from careerpilot.models import CareerAnalysis, CareerProfile, LookupRequest
+from careerpilot.models import CareerAnalysis, CareerPath, CareerProfile
 from careerpilot.tracing import AgentTracer
 from careerpilot.guardrails import (
     requires_human_review,
@@ -10,12 +12,35 @@ from careerpilot.guardrails import (
     tool_call_guardrail,
 )
 
+# Allow the API address to be configured for different environments
+API_BASE_URL = os.getenv(
+    "CAREERPILOT_API_BASE_URL",
+    "http://127.0.0.1:8000",
+)
 # Main CareerPilot agent
 class CareerPilotAgent:
 
     def __init__(self) -> None:
         # Create a tracer for this agent instance
         self.tracer = AgentTracer()
+
+
+    def _post_to_api(self, endpoint: str, payload: dict) -> dict:
+        """Send a POST request to a CareerPilot API endpoint."""
+
+        # Send the request with a timeout to prevent indefinite waiting
+        response = httpx.post(
+            f"{API_BASE_URL}/{endpoint}",
+            json=payload,
+            timeout=10.0,
+        )
+
+        # Raise an error if the API returns an unsuccessful status code
+        response.raise_for_status()
+
+        # Return the response body as a Python dictionary
+        return response.json()
+
 
     def run(
         self,
@@ -52,8 +77,20 @@ class CareerPilotAgent:
                 state.final_response = guardrail
                 return state
 
-            # Call the knowledge tool
-            result = ask(AskRequest(question=request))
+
+            # Call the knowledge endpoint and handle service failures safely
+            try:
+                response = self._post_to_api("ask", {"question": request})
+
+                # Extract the answer returned by the API
+                result = response["answer"]
+            except Exception:
+                # Log a safe message without exposing internal service details
+                self.tracer.log("Knowledge service failed")
+                state.final_response = (
+                    "The knowledge service is currently unavailable. Please try again later."
+                )
+                return state
 
             # Record the tool execution
             state.add_tool_step(
@@ -128,6 +165,7 @@ class CareerPilotAgent:
                 # Return known safe messages while hiding unexpected errors
                 safe_messages = {
                     "The career-fit prediction service is currently unavailable.",
+                    "The career lookup service is currently unavailable.",
                 }
 
                 if str(error).startswith("Career path not found:"):
@@ -181,12 +219,26 @@ class CareerPilotAgent:
             if not target_role:
                 target_role = "AI Engineer"
 
-            result = lookup(
-                LookupRequest(
-                    lookup_type="career",
-                    query=target_role,
+            # Call the career lookup endpoint and handle service failures safely
+            try:
+                response = self._post_to_api(
+                    "lookup",
+                    {
+                        "lookup_type": "career",
+                        "query": target_role,
+                    },
                 )
-            )
+
+                # Extract the career record when a match is found
+                result = response.get("career") if response.get("found") else None
+            except Exception:
+                # Log a safe message without exposing internal service details
+                self.tracer.log("Career lookup service failed")
+                state.final_response = (
+                    "The career lookup service is currently unavailable. Please try again later."
+                )
+                return state
+
 
             # Record the tool execution
             state.add_tool_step(
@@ -195,7 +247,8 @@ class CareerPilotAgent:
                     "lookup_type": "career",
                     "query": target_role,
                 },
-                result=result.model_dump_json() if result else "Not found",
+                # Store the career record as JSON when a match is found
+                result=json.dumps(result) if result else "Not found",
             )
 
             # Handle a missing lookup result safely
@@ -210,13 +263,11 @@ class CareerPilotAgent:
 
                 return state
 
-            # Log the successful lookup
-            self.tracer.log(
-                f"Lookup result: {result.model_dump()}"
-            )
+            # Log the career record returned by the API
+            self.tracer.log(f"Lookup result: {result}")
 
-            # Store the verified result as the final answer
-            state.final_response = result.model_dump_json(indent=2)
+            # Store the verified API result as formatted JSON
+            state.final_response = json.dumps(result, indent=2)
 
             return state
 
@@ -254,12 +305,34 @@ def analyze_career(
         },
     )
 
-    career = lookup(
-        LookupRequest(
-            lookup_type="career",
-            query=target_role,
+
+    # Request career information from the FastAPI lookup endpoint
+    try:
+        response = httpx.post(
+            f"{API_BASE_URL}/lookup",
+            json={
+                "lookup_type": "career",
+                "query": target_role,
+            },
+            timeout=10.0,
         )
-    )
+
+        # Raise an error if the lookup API returns an unsuccessful status
+        response.raise_for_status()
+
+        # Extract and validate the career record from the API response
+        lookup_data = response.json()
+        career = (
+            CareerPath.model_validate(lookup_data["career"])
+            if lookup_data.get("found") and lookup_data.get("career")
+            else None
+        )
+    except Exception:
+        # Avoid exposing internal service or database details
+        tracer.log("Career lookup service failed")
+        raise RuntimeError(
+            "The career lookup service is currently unavailable."
+        ) from None
 
     # Record the lookup execution
     state.add_tool_step(
@@ -291,12 +364,22 @@ def analyze_career(
     
     # Try to calculate the candidate's career fit
     try:
-        prediction = predict_career_fit(
-            CareerFitRequest(
-                profile=profile,
-                target_role=target_role,
-            )
+
+        # Send the candidate profile to the prediction API
+        response = httpx.post(
+            f"{API_BASE_URL}/predict",
+            json={
+                "profile": profile.model_dump(),
+                "target_role": target_role,
+            },
+            timeout=10.0,
         )
+
+        # Raise an error if the prediction API returns an unsuccessful status
+        response.raise_for_status()
+
+        # Validate the JSON response using the actual prediction model
+        prediction = CareerFitPrediction.model_validate(response.json())
 
     except Exception as error:
         # Log the tool failure without exposing internal details
@@ -339,11 +422,27 @@ def analyze_career(
         },
     )
 
-    explanation = ask(
-        AskRequest(
-            question=f"What does a {career.role} do?"
+
+
+    # Ask the knowledge endpoint to explain the selected career
+    try:
+        response = httpx.post(
+            f"{API_BASE_URL}/ask",
+            json={"question": f"What does a {career.role} do?"},
+            timeout=10.0,
         )
-    )
+
+        # Raise an error if the knowledge API returns an unsuccessful status
+        response.raise_for_status()
+
+        # Extract the explanation from the API response
+        explanation = response.json()["answer"]
+    except Exception:
+        # Log a safe message without exposing internal service details
+        tracer.log("Career explanation service failed")
+        raise RuntimeError(
+            "The career explanation service is currently unavailable."
+        ) from None
 
     # Record the knowledge lookup execution
     state.add_tool_step(

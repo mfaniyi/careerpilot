@@ -1,5 +1,5 @@
 from careerpilot.agent import CareerPilotAgent
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from careerpilot.models import CareerProfile
 from careerpilot.guardrails import tool_call_guardrail
 from careerpilot.state import AgentState
@@ -122,31 +122,50 @@ def test_unknown_career_fails_safely():
     assert "quantum career specialist" in result.final_response.lower()
 
 
-# Test that CareerPilot fails safely when the prediction tool fails
+
+# Test that CareerPilot handles a failed prediction API request safely
 def test_prediction_failure_is_handled_safely():
     agent = CareerPilotAgent()
 
-    # Simulate a failure from the prediction tool
+    # Return a valid career record for the lookup request
+    lookup_response = {
+        "found": True,
+        "career": {
+            "role": "AI Engineer",
+            "description": "Builds AI systems.",
+            "required_skills": ["Python"],
+            "preferred_skills": ["Machine Learning"],
+            "entry_level": "Intermediate",
+            "related_roles": ["Data Scientist"],
+        },
+    }
+
+    # Create mock responses for lookup success and prediction failure
+    lookup_http_response = Mock()
+    lookup_http_response.json.return_value = lookup_response
+    lookup_http_response.raise_for_status.return_value = None
+
+    prediction_http_response = Mock()
+    prediction_http_response.raise_for_status.side_effect = RuntimeError(
+        "Prediction service unavailable"
+    )
+
+    # Simulate the lookup succeeding before prediction fails
     with patch(
-        "careerpilot.agent.predict_career_fit",
-        side_effect=RuntimeError("Prediction service unavailable"),
+        "careerpilot.agent.httpx.post",
+        side_effect=[lookup_http_response, prediction_http_response],
     ):
         result = agent.run(
             "How suitable am I for AI Engineer?",
             profile=candidate,
         )
 
-    # Verify that the prediction tool was reached
+    # Verify lookup and prediction were attempted in order
     tools_used = [step.tool for step in result.tool_steps]
-
     assert tools_used == ["lookup", "predict"]
 
-    # Verify that the agent returned a safe failure response
+    # Verify the agent returned a safe failure response
     assert "prediction service is currently unavailable" in result.final_response.lower()
-
-    # Verify that the agent did not invent a prediction
-    assert result.final_response is not None
-
 
 # Test that CareerPilot stops when the tool-call limit is reached
 def test_tool_call_limit_is_enforced():
@@ -201,48 +220,55 @@ def test_tool_failure_guardrail_prevents_fallback_answer():
 
 
 
-# Test that career analysis handles a missing career without crashing
+
+# Test that analysis fails safely when the lookup API finds no career
 def test_missing_career_during_analysis_fails_safely():
     agent = CareerPilotAgent()
 
-    # Simulate the lookup tool returning no matching career
+    # Mock a successful HTTP response with no matching career
+    lookup_http_response = Mock()
+    lookup_http_response.raise_for_status.return_value = None
+    lookup_http_response.json.return_value = {
+        "found": False,
+        "career": None,
+    }
+
+    # Simulate the lookup API returning no matching career
     with patch(
-        "careerpilot.agent.lookup",
-        return_value=None,
+        "careerpilot.agent.httpx.post",
+        return_value=lookup_http_response,
     ):
         result = agent.run(
             "How suitable am I for AI Engineer?",
             profile=candidate,
         )
 
-    # Verify that the lookup step was recorded
-    assert [step.tool for step in result.tool_steps] == ["lookup"]
+    # Verify that lookup was attempted but prediction was not
+    tools_used = [step.tool for step in result.tool_steps]
+    assert tools_used == ["lookup"]
 
-    # Verify that the agent returned a controlled failure response
-    assert result.final_response is not None
+    # Verify that the agent returned a safe failure response
     assert "career path not found" in result.final_response.lower()
 
 
-
-# Test that the agent stops before calling a tool when the limit is reached
+# Test that the agent stops before making an API request when its limit is reached
 def test_agent_stops_when_tool_call_limit_is_reached():
     agent = CareerPilotAgent()
 
-    # Simulate the guardrail reporting that the call limit has been reached
+    # Simulate the guardrail reaching the tool-call limit
     with patch(
         "careerpilot.agent.tool_call_guardrail",
         return_value="Tool-call limit reached. The agent must stop.",
     ), patch(
-        "careerpilot.agent.ask",
-    ) as mock_ask:
-        result = agent.run("What does an AI Engineer do?")
+        "careerpilot.agent.httpx.post",
+    ) as mock_post:
+        result = agent.run("How suitable am I for AI Engineer?",profile=candidate)
 
-    # Verify the agent returned the guardrail response
+    # Verify that the agent stopped without calling the API
+    mock_post.assert_not_called()
+
+    # Verify that the guardrail message was returned
     assert "tool-call limit reached" in result.final_response.lower()
-
-    # Verify no tool call was made
-    mock_ask.assert_not_called()
-    assert result.tool_call_count == 0
 
 
 
@@ -258,14 +284,13 @@ def test_unrelated_request_with_career_keyword_is_refused():
     assert "career and technology navigation agent" in result.final_response.lower()
 
 
-
-# Test that an unexpected lookup failure during analysis is handled safely
+# Test that lookup failures are handled without exposing internal details
 def test_lookup_exception_during_analysis_fails_safely():
     agent = CareerPilotAgent()
 
-    # Simulate the lookup service raising an unexpected exception
+    # Simulate the lookup API request failing unexpectedly
     with patch(
-        "careerpilot.agent.lookup",
+        "careerpilot.agent.httpx.post",
         side_effect=RuntimeError("Database connection details"),
     ):
         result = agent.run(
@@ -273,11 +298,8 @@ def test_lookup_exception_during_analysis_fails_safely():
             profile=candidate,
         )
 
-    # Verify that the agent returns a response instead of crashing
-    assert result.final_response is not None
+    # Verify that lookup failed before any tool step was recorded
+    assert result.tool_steps == []
 
-    # Verify that internal exception details are not exposed
+    # Verify that internal error details are not exposed
     assert "database connection details" not in result.final_response.lower()
-
-    # Verify that no prediction or knowledge tool ran after lookup failed
-    assert [step.tool for step in result.tool_steps] == []

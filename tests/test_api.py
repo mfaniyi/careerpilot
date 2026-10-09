@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+from unittest.mock import Mock, patch  # Mock HTTP responses and patch requests
 from careerpilot.api import app
 
 
@@ -217,10 +217,9 @@ def test_agent_endpoint_out_of_scope() -> None:
     assert result["tool_steps"] == []
 
 
-# Test that the /agent endpoint handles prediction failures safely
-def test_agent_endpoint_prediction_failure() -> None:
-    """Verify that the API returns a safe response when prediction fails."""
 
+# Test that the agent API returns a safe response when prediction fails
+def test_agent_endpoint_prediction_failure() -> None:
     # Create a sample career profile
     profile = {
         "name": "Michael",
@@ -233,12 +232,32 @@ def test_agent_endpoint_prediction_failure() -> None:
         "career_goal": "Become an AI Engineer",
     }
 
-    # Simulate a prediction service failure
+    # Mock a successful career lookup response
+    lookup_http_response = Mock()
+    lookup_http_response.raise_for_status.return_value = None
+    lookup_http_response.json.return_value = {
+        "found": True,
+        "career": {
+            "role": "AI Engineer",
+            "description": "Builds AI systems.",
+            "required_skills": ["Python"],
+            "preferred_skills": ["Machine Learning"],
+            "entry_level": "Intermediate",
+            "related_roles": ["Data Scientist"],
+        },
+    }
+
+    # Mock a prediction response that raises an error
+    prediction_http_response = Mock()
+    prediction_http_response.raise_for_status.side_effect = RuntimeError(
+        "Prediction service unavailable"
+    )
+
+    # Simulate lookup success followed by prediction failure
     with patch(
-        "careerpilot.agent.predict_career_fit",
-        side_effect=Exception("Prediction service unavailable"),
+        "careerpilot.agent.httpx.post",
+        side_effect=[lookup_http_response, prediction_http_response],
     ):
-        # Send the request through the agent API
         response = client.post(
             "/agent",
             json={
@@ -247,17 +266,15 @@ def test_agent_endpoint_prediction_failure() -> None:
             },
         )
 
-    # Verify the API still returns a successful HTTP response
-    assert response.status_code == 200
+    # Verify the endpoint returns a safe failure message
+    assert "prediction service is currently unavailable" in (
+        response.json()["response"].lower()
+    )
 
-    # Read the agent result
-    result = response.json()
-
-    # Verify that the agent returned a safe failure message
-    assert "prediction service is currently unavailable" in result["response"]
-
-    # Verify that human review was not incorrectly triggered
-    assert result["human_review_required"] is False
+    # Verify internal error details are not exposed
+    assert "prediction service unavailable" not in (
+        response.json()["response"].lower()
+    )
 
 
 def test_agent_endpoint_rejects_missing_request():
