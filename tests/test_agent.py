@@ -198,3 +198,86 @@ def test_tool_failure_guardrail_prevents_fallback_answer():
 
     assert response is not None
     assert "cannot provide" in response.lower()
+
+
+
+# Test that career analysis handles a missing career without crashing
+def test_missing_career_during_analysis_fails_safely():
+    agent = CareerPilotAgent()
+
+    # Simulate the lookup tool returning no matching career
+    with patch(
+        "careerpilot.agent.lookup",
+        return_value=None,
+    ):
+        result = agent.run(
+            "How suitable am I for AI Engineer?",
+            profile=candidate,
+        )
+
+    # Verify that the lookup step was recorded
+    assert [step.tool for step in result.tool_steps] == ["lookup"]
+
+    # Verify that the agent returned a controlled failure response
+    assert result.final_response is not None
+    assert "career path not found" in result.final_response.lower()
+
+
+
+# Test that the agent stops before calling a tool when the limit is reached
+def test_agent_stops_when_tool_call_limit_is_reached():
+    agent = CareerPilotAgent()
+
+    # Simulate the guardrail reporting that the call limit has been reached
+    with patch(
+        "careerpilot.agent.tool_call_guardrail",
+        return_value="Tool-call limit reached. The agent must stop.",
+    ), patch(
+        "careerpilot.agent.ask",
+    ) as mock_ask:
+        result = agent.run("What does an AI Engineer do?")
+
+    # Verify the agent returned the guardrail response
+    assert "tool-call limit reached" in result.final_response.lower()
+
+    # Verify no tool call was made
+    mock_ask.assert_not_called()
+    assert result.tool_call_count == 0
+
+
+
+# Test that a misleading keyword does not bypass the scope guardrail
+def test_unrelated_request_with_career_keyword_is_refused():
+    agent = CareerPilotAgent()
+
+    # Include a career-related word in an unrelated request
+    result = agent.run("Explain the history of career criminals.")
+
+    # Verify that the agent refuses the unrelated request
+    assert result.tool_call_count == 0
+    assert "career and technology navigation agent" in result.final_response.lower()
+
+
+
+# Test that an unexpected lookup failure during analysis is handled safely
+def test_lookup_exception_during_analysis_fails_safely():
+    agent = CareerPilotAgent()
+
+    # Simulate the lookup service raising an unexpected exception
+    with patch(
+        "careerpilot.agent.lookup",
+        side_effect=RuntimeError("Database connection details"),
+    ):
+        result = agent.run(
+            "How suitable am I for AI Engineer?",
+            profile=candidate,
+        )
+
+    # Verify that the agent returns a response instead of crashing
+    assert result.final_response is not None
+
+    # Verify that internal exception details are not exposed
+    assert "database connection details" not in result.final_response.lower()
+
+    # Verify that no prediction or knowledge tool ran after lookup failed
+    assert [step.tool for step in result.tool_steps] == []

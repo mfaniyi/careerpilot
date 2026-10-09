@@ -1,8 +1,4 @@
 from careerpilot.ask import AskRequest, ask
-from careerpilot.guardrails import (
-    scope_guardrail,
-    tool_call_guardrail,
-)
 from careerpilot.predict import CareerFitRequest, predict_career_fit
 from careerpilot.state import AgentState
 from careerpilot.tools import lookup
@@ -13,7 +9,6 @@ from careerpilot.guardrails import (
     scope_guardrail,
     tool_call_guardrail,
 )
-
 
 # Main CareerPilot agent
 class CareerPilotAgent:
@@ -125,12 +120,27 @@ class CareerPilotAgent:
                 if state.human_review_required:
                     self.tracer.log("Human review required for this recommendation")
 
+
             except RuntimeError as error:
-                # Log the controlled failure
+                # Log the controlled failure without exposing raw exceptions
                 self.tracer.log("Career analysis stopped safely")
 
-                # Return a safe response instead of crashing
-                state.final_response = str(error)
+                # Return known safe messages while hiding unexpected errors
+                safe_messages = {
+                    "The career-fit prediction service is currently unavailable.",
+                }
+
+                if str(error).startswith("Career path not found:"):
+                    state.final_response = (
+                        "Career path not found in the CareerPilot knowledge base."
+                    )
+                elif str(error) in safe_messages:
+                    state.final_response = str(error)
+                else:
+                    state.final_response = (
+                        "I couldn't complete the career analysis because a "
+                        "required service encountered an error. Please try again later."
+                    )
 
                 return state
 
@@ -263,7 +273,7 @@ def analyze_career(
 
     # Stop safely if the career does not exist
     if career is None:
-        raise ValueError(f"Career path not found: {target_role}")
+        raise RuntimeError(f"Career path not found: {target_role}")
 
     # Check the tool-call limit before calling the prediction tool
     guardrail = tool_call_guardrail(state.tool_call_count)
@@ -342,6 +352,16 @@ def analyze_career(
             "question": f"What does a {career.role} do?",
         },
         result=explanation,
+    )
+
+
+    # Log the knowledge tool result for auditability
+    tracer.log(
+        "Ask tool completed",
+        details={
+            "tool": "ask",
+            "result": explanation,
+        },
     )
 
     # Combine all tool results into one structured analysis

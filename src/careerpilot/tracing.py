@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 
@@ -21,14 +22,11 @@ class AgentTracer:
         if details is not None:
             event += f" | Details: {details}"
 
-        # Store the event
+        # Store and display the event
         self.events.append(event)
-
-        # Display the event immediately
         print(event)
 
-
-        # Trace messages produced by Microsoft Agent Framework
+    # Trace messages produced by Microsoft Agent Framework
     def log_framework_message(self, message) -> None:
         """Record important Agent Framework execution events."""
 

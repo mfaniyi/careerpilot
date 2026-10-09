@@ -1,3 +1,4 @@
+
 # Keywords that indicate CareerPilot-related requests
 CAREER_KEYWORDS = [
     "career",
@@ -17,10 +18,20 @@ CAREER_KEYWORDS = [
 
 # Check whether a user request is within CareerPilot's scope
 def is_in_scope(request: str) -> bool:
-    """Return True when the request is related to careers or technology."""
+    """Return True when the request relates to career or technology guidance."""
 
     # Normalize the request for case-insensitive matching
     request = request.lower()
+
+    # Reject known unrelated contexts before checking broad keywords
+    unrelated_contexts = [
+        "career criminal",
+        "career criminals",
+        "history of",
+    ]
+
+    if any(context in request for context in unrelated_contexts):
+        return False
 
     # Check whether at least one relevant keyword exists
     return any(keyword in request for keyword in CAREER_KEYWORDS)
