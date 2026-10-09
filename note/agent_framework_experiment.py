@@ -1,8 +1,11 @@
+import asyncio
 import os
-from careerpilot.tracing import AgentTracer
+
 from dotenv import load_dotenv
-from agent_framework import Agent
+from agent_framework import Agent, Message
 from agent_framework.openai import OpenAIChatClient
+
+from careerpilot.tracing import AgentTracer
 from careerpilot.framework_tools import framework_career_lookup
 from careerpilot.guardrails import (
     scope_guardrail,
@@ -22,9 +25,6 @@ client = OpenAIChatClient(
     base_url=os.getenv("AZURE_OPENAI_ENDPOINT"),
 )
 
-# Invoke the framework tool using its structured arguments
-import asyncio
-
 
 # Run the asynchronous framework tool
 async def main():
@@ -41,19 +41,6 @@ async def main():
 
     # Create a tracer for this agent run
     tracer = AgentTracer()
-    
-    # Invoke the CareerPilot lookup wrapper with structured arguments
-    """result = await framework_career_lookup.invoke(
-        arguments={
-            "request": {
-                "lookup_type": "career",
-                "query": "AI Engineer",
-            }
-        }
-    )
-
-    # Extract and display the actual text returned by the framework tool
-    print(result[0].text)"""
 
     # Define the user's request for this agent run
     user_request = (
@@ -69,11 +56,39 @@ async def main():
         print("Guardrail:", guardrail_response)
         return
 
-    # Run the Agent Framework agent for an allowed request
-    response = await agent.run(user_request)
+    # Create a session managed by the agent for approval state persistence
+    session = agent.create_session()
+
+    # Run the agent using the approval-enabled session
+    response = await agent.run(
+        user_request,
+        session=session,
+    )
+
+    # Retrieve approval requests through the framework's public API
+    approval_request = response.user_input_requests[0]
+
+    # Approve the requested tool call using its occurrence ID
+    approval_response = approval_request.to_function_approval_response(
+        approved=True
+    )
+
+    # Wrap the approval response in an explicit user message
+    approval_message = Message(
+        role="user",
+        contents=[approval_response],
+    )
+
+    approved_response = await agent.run(approval_message, session=session)
+
+    # Display the result returned by the approved tool call
+    for message in approved_response.messages:
+        for content in message.contents:
+            if content.type == "function_result":
+                print("Tool result:", content.result)
 
     # Check whether any tool returned an explicit failure
-    for message in response.messages:
+    for message in approved_response.messages:
         for content in message.contents:
             # Inspect tool results before accepting the agent response
             if content.type == "function_result":
@@ -94,13 +109,8 @@ async def main():
                     return
 
     # Trace each message produced during the agent run
-    for message in response.messages:
+    for message in approved_response.messages:
         tracer.log_framework_message(message)
 
-# Start the async experiment
+# Run the asynchronous agent experiment
 asyncio.run(main())
-
-
-# Verify the configured tool invocation limit
-print("Tool name:", framework_career_lookup.name)
-print("Maximum invocations:", framework_career_lookup.max_invocations)

@@ -8,6 +8,7 @@ from careerpilot.tools import lookup
 @tool(
     name="career_lookup",
     description="Look up structured information about a technology career.",
+    approval_mode="always_require",
     max_invocations=5,
 )
 def framework_career_lookup(request: LookupRequest) -> str:
