@@ -41,10 +41,6 @@ def predict_career_fit(request: CareerFitRequest) -> CareerFitPrediction:
     # Normalize skills for case-insensitive comparison
     user_skills = {skill.lower() for skill in request.profile.skills}
     required_skills = {skill.lower() for skill in career.required_skills}
-    # Debug the profile skills received by the prediction function.
-    print("DEBUG - Target role:", request.target_role)
-    print("DEBUG - Profile skills:", request.profile.skills)
-    print("DEBUG - Normalized user skills:", user_skills)
 
     # Identify skills the candidate already has
     matched_skills = sorted(

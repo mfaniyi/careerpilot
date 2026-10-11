@@ -69,9 +69,6 @@ class CareerPilotAgent:
 
         # Retrieve the structured extraction result
         profile = response.value
-        # Inspect extracted skills during debugging.
-        if profile is not None:
-            print("DEBUG - Extracted profile:", profile.model_dump())
 
         # Fail safely if the model returns no structured result
         if profile is None:
