@@ -15,6 +15,20 @@ class CareerProfile(BaseModel):
     career_goal: str
 
 
+
+# Represents information extracted from natural-language career background
+class CareerProfileExtraction(BaseModel):
+    # Keep missing information as None rather than inventing a value
+    name: str | None = None
+    current_role: str | None = None
+    years_of_experience: int | None = Field(default=None, ge=0)
+    education: list[str] | None = None
+    skills: list[str] | None = None
+    certifications: list[str] | None = None
+    industry: str | None = None
+    career_goal: str | None = None
+
+
 # Represents a technology career that CareerPilot can recommend
 class CareerPath(BaseModel):
     role: str
@@ -31,18 +45,31 @@ class LookupRequest(BaseModel):
     query: str
 
 
-# Represents the combined result of a CareerPilot career analysis
+
+# Represents the combined result of a CareerPilot career analysis.
 class CareerAnalysis(BaseModel):
     target_role: str
     career_information: CareerPath | None = None
     fit_score: float | None = None
     matched_skills: list[str] = Field(default_factory=list)
     missing_skills: list[str] = Field(default_factory=list)
+    matched_preferred_skills: list[str] = Field(default_factory=list)
     career_explanation: str | None = None
     recommendation: str | None = None
+
 
 
 # Defines the input accepted by the CareerPilot agent endpoint
 class AgentRequest(BaseModel):
     request: str
     profile: CareerProfile | None = None
+
+    # Carries an incomplete extracted profile into a follow-up request
+    pending_profile: CareerProfileExtraction | None = None
+
+
+
+# Defines the decision submitted by a human reviewer.
+class ReviewDecisionRequest(BaseModel):
+    review_id: str
+    decision: Literal["approve", "reject"]

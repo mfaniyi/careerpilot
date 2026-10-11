@@ -22,8 +22,20 @@ CAREER_PATHS = [
     CareerPath(
         role="AI Engineer",
         description="Build and deploy AI-powered applications and machine learning systems.",
-        required_skills=["Python", "Machine Learning", "APIs"],
-        preferred_skills=["Docker", "Cloud", "LLMs"],
+        required_skills=[
+            "Python",
+            "Machine Learning",
+            "APIs",
+            "Data Modelling",
+            "SQL",
+        ],
+        preferred_skills=[
+            "Docker",
+            "Cloud",
+            "LLMs",
+            "ETL",
+            "Data Visualisation",
+        ],
         entry_level="Intermediate",
         related_roles=["ML Engineer", "Data Scientist", "AI Developer"],
     ),

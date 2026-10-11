@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CareerPilot helps you explore technology careers, understand your skills, and plan your next career move.">
+    <title>CareerPilot | Your AI Career Companion</title>
+    <style>
+        /* Define the dark editorial design system */
+        :root {
+            --background: #11100f;
+            --background-soft: #171615;
+            --surface: #1b1a19;
+            --surface-raised: #211f1d;
+            --text: #f2eee7;
+            --muted: #a09a92;
+            --muted-dark: #77716a;
+            --border: #393531;
+            --accent: #c96d4b;
+            --accent-hover: #df805d;
+            --success: #91c5a7;
+            --danger: #e18b82;
+            --radius: 18px;
+            --shadow: 0 18px 48px rgb(0 0 0 / 22%);
+        }
+
+        /* Normalize element sizing and spacing */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 24px;
+        }
+
+        /* Use clean sans-serif body text with a restrained editorial palette */
+        body {
+            min-height: 100vh;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.75;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at 4% 100%, rgb(115 61 39 / 10%), transparent 34%),
+                radial-gradient(ellipse at 96% 100%, rgb(115 61 39 / 8%), transparent 31%),
+                var(--background);
+        }
+
+        button, input, textarea, select {
+            font: inherit;
+        }
+
+        button, a {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:focus-visible, a:focus-visible,
+        input:focus-visible, textarea:focus-visible, select:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        /* Keep the app spacious and make the sidebar subtle */
+        .app {
+            display: grid;
+            grid-template-columns: 238px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 30px 18px 22px;
+            background: rgb(20 19 18 / 92%);
+            border-right: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 8px;
+            margin-bottom: 38px;
+        }
+
+        .brand-icon {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            border: 1px solid #5a4034;
+            border-radius: 13px;
+            background: #28201c;
+            color: var(--accent);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 23px;
+            font-weight: 700;
+        }
+
+        .brand h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 21px;
+            font-weight: 600;
+            letter-spacing: -0.6px;
+            line-height: 1.2;
+        }
+
+        .brand p {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .nav-label {
+            padding: 0 12px;
+            margin: 15px 0 10px;
+            color: var(--muted-dark);
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            text-transform: lowercase;
+        }
+
+        .nav-links {
+            display: grid;
+            gap: 5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: var(--muted);
+            font-size: 13px;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        .nav-item:hover {
+            background: #211f1d;
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: #24201d;
+            border-color: #49342b;
+            color: var(--text);
+        }
+
+        .nav-item.active .nav-icon {
+            color: var(--accent);
+        }
+
+        .nav-icon {
+            width: 21px;
+            text-align: center;
+            color: var(--muted-dark);
+            font-size: 16px;
+        }
+
+        /* Center the primary content */
+        .main {
+            width: 100%;
+            max-width: 1500px;
+            min-width: 0;
+            margin: 0 auto;
+            padding: 32px clamp(20px, 4vw, 58px) 28px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 42px;
+        }
+
+        .quote {
+            color: var(--muted-dark);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 12px;
+            font-style: italic;
+            font-weight: 300;
+            text-decoration: line-through;
+            text-decoration-color: #61584f;
+        }
+
+        .eyebrow, .section-eyebrow {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 1.7px;
+            text-transform: lowercase;
+        }
+
+        .topbar h2 {
+            margin-top: 8px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(30px, 3vw, 43px);
+            font-weight: 500;
+            letter-spacing: -1.4px;
+            line-height: 1.08;
+        }
+
+        .topbar-description {
+            max-width: 620px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .avatar {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            background: var(--surface);
+            color: var(--text);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 13px;
+        }
+
+        /* Main question area: dark, calm, and editorial */
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(26px, 4vw, 52px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: linear-gradient(145deg, #1e1c1a, #191817 70%);
+            box-shadow: var(--shadow);
+        }
+
+        .hero::before, .card::before, .result-panel::before, .profile-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 2px;
+            background: var(--accent);
+            opacity: 0.75;
+        }
+
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 850px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            border: 1px solid #494039;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 0.2px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .hero h3 {
+            max-width: 720px;
+            margin-top: 24px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(37px, 5vw, 66px);
+            font-weight: 500;
+            letter-spacing: -2.1px;
+            line-height: 0.99;
+        }
+
+        .hero h3 em {
+            color: var(--accent);
+            font-weight: 400;
+        }
+
+        .hero-description {
+            max-width: 560px;
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.9;
+        }
+
+        .search-label {
+            display: block;
+            margin: 30px 0 10px;
+            color: #d5cec5;
+            font-size: 12px;
+        }
+
+        .search-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 760px;
+            padding: 7px;
+            border: 1px solid #47413b;
+            border-radius: 999px;
+            background: #11100f;
+        }
+
+        .search-form input {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 15px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #77716a;
+        }
+
+        .search-form input:focus-visible {
+            outline: none;
+        }
+
+        .button, .primary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 16px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            background: var(--accent);
+            color: #1b110d;
+            font-size: 11px;
+            font-weight: 650;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.2s, opacity 0.2s;
+        }
+
+        .button:hover, .primary-button:hover {
+            background: var(--accent-hover);
+        }
+
+        .button:active, .primary-button:active {
+            transform: scale(0.98);
+        }
+
+        .button:disabled, .primary-button:disabled {
+            cursor: wait;
+            opacity: 0.6;
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .suggestions-label {
+            color: var(--muted-dark);
+            font-size: 11px;
+        }
+
+        .suggestion {
+            padding: 5px 10px;
+            border: 1px solid #3e3934;
+            border-radius: 999px;
+            background: transparent;
+            color: #c0b8af;
+            font-size: 10px;
+            transition: border-color 0.2s, color 0.2s, background 0.2s;
+        }
+
+        .suggestion:hover {
+            border-color: #79513f;
+            background: #27201c;
+            color: var(--text);
+        }
+
+        /* Make the answer easy to distinguish from the page */
+        .result-panel {
+            position: relative;
+            display: none;
+            overflow: hidden;
+            margin-top: 20px;
+            padding: 24px;
+            border: 1px solid #514239;
+            border-radius: 16px;
+            background: #211e1b;
+            box-shadow: var(--shadow);
+            scroll-margin-top: 20px;
+            overflow-wrap: anywhere;
+        }
+
+        .result-panel.visible {
+            display: block;
+            animation: slide-in 0.25s ease-out;
+        }
+
+        .result-heading {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .result-icon {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border: 1px solid #4d3a30;
+            border-radius: 11px;
+            background: #2b211c;
+            color: var(--accent);
+            font-size: 17px;
+        }
+
+        .result-heading-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-eyebrow {
+            color: var(--accent);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1.1px;
+            text-transform: uppercase;
+        }
+
+        .result-panel h3 {
+            margin-top: 3px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 21px;
+            font-weight: 500;
+            letter-spacing: -0.4px;
+        }
+
+        .result-content {
+            margin-top: 17px;
+            color: #d0c9c0;
+            font-size: 14px;
+            line-height: 1.9;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .result-content.error {
+            color: var(--danger);
+        }
+
+        .result-content.loading {
+            color: var(--muted);
+        }
+        
+        /* Highlight assessments that are awaiting human review. */
+        .result-content.review {
+            border-left: 4px solid #d97706;
+            background-color: #fffbeb;
+            color: #78350f;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        /* Structure career assessments into readable dashboard sections */
+        .result-content.assessment-result {
+            display: grid;
+            gap: 18px;
+            margin-top: 24px;
+            color: var(--text);
+            white-space: normal;
+        }
+
+        /* Highlight the target career and its fit score */
+        .assessment-hero {
+            padding: 22px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: linear-gradient(135deg, #29221e, #1b1a19);
+        }
+
+        .assessment-label {
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .assessment-role {
+            margin-top: 5px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(25px, 4vw, 36px);
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .assessment-score-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 22px;
+        }
+
+        .assessment-score {
+            color: var(--accent);
+            font-size: 30px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .assessment-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 11px;
+            border: 1px solid #46664f;
+            border-radius: 999px;
+            background: #202b23;
+            color: var(--success);
+            font-size: 11px;
+        }
+
+        .assessment-progress {
+            height: 7px;
+            margin-top: 13px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #393531;
+        }
+
+        .assessment-progress-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: var(--success);
+        }
+
+        
+        /* Use distinct colors to communicate the score range */
+        .assessment-progress-fill.score-strong {
+            background: var(--success);
+        }
+
+        .assessment-progress-fill.score-developing {
+            background: #d7ad65;
+        }
+
+        .assessment-progress-fill.score-upskilling {
+            background: var(--accent);
+        }
+
+        .assessment-section {
+            padding: 19px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--surface);
+        }
+
+        .assessment-section h4 {
+            margin-bottom: 9px;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .assessment-section p {
+            color: #d0c9c0;
+            font-size: 13px;
+            line-height: 1.85;
+        }
+
+        .assessment-skills {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .assessment-skill-group {
+            min-width: 0;
+            padding: 17px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--surface);
+        }
+
+        .assessment-skill-group h4 {
+            margin-bottom: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .assessment-skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .assessment-skill-tag {
+            padding: 5px 10px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--text);
+            font-size: 11px;
+            overflow-wrap: anywhere;
+        }
+
+        .assessment-skill-tag.matched {
+            border-color: #46664f;
+            background: #202b23;
+            color: var(--success);
+        }
+
+        .assessment-skill-tag.missing {
+            border-color: #76533a;
+            background: #30251e;
+            color: #e4b18a;
+        }
+
+        /* Stack skill groups on narrow screens */
+        @media (max-width: 560px) {
+            .assessment-skills {
+                grid-template-columns: 1fr;
+            }
+
+            .assessment-hero {
+                padding: 17px;
+            }
+
+            .assessment-score {
+                font-size: 26px;
+            }
+        }
+
+        .result-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .result-note {
+            color: var(--muted-dark);
+            font-size: 10px;
+        }
+
+        .copy-button {
+            padding: 7px 11px;
+            border: 1px solid #4a443e;
+            border-radius: 999px;
+            background: #171615;
+            color: #d5cec5;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .copy-button:hover {
+            border-color: #79513f;
+            color: var(--text);
+        }
+
+        /* Loading animation for pending requests */
+        .loading-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-right: 8px;
+        }
+
+        .loading-indicator span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1s infinite ease-in-out;
+        }
+
+        .loading-indicator span:nth-child(2) { animation-delay: 0.15s; }
+        .loading-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes pulse {
+            0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+            40% { opacity: 1; transform: translateY(-4px); }
+        }
+
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Shared section headings */
+        .toolkit, .profile-section {
+            margin-top: 44px;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 18px;
+        }
+
+        .section-heading h2, .section-heading h3 {
+            margin-top: 5px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(24px, 2.6vw, 34px);
+            font-weight: 500;
+            letter-spacing: -0.8px;
+            line-height: 1.15;
+        }
+
+        .section-heading p:not(.section-eyebrow) {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .section-caption {
+            color: var(--muted-dark);
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            overflow: hidden;
+            padding: 22px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            box-shadow: 0 3px 12px rgb(0 0 0 / 10%);
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #5b4539;
+            box-shadow: var(--shadow);
+        }
+
+        .card-icon {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            margin-bottom: 17px;
+            border: 1px solid #42362f;
+            border-radius: 12px;
+            background: #27211d;
+            font-size: 20px;
+        }
+
+        .card h4 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 19px;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+        }
+
+        .card p {
+            flex: 1;
+            margin-top: 9px;
+            margin-bottom: 18px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.85;
+        }
+
+        .card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0;
+            border: none;
+            background: transparent;
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .card-link:hover {
+            color: var(--accent-hover);
+        }
+
+        /* Style the personalized assessment form */
+        .profile-card {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(20px, 3vw, 32px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .profile-form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            min-width: 0;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            color: #d9d2c9;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            min-width: 0;
+            padding: 11px 13px;
+            border: 1px solid #45403a;
+            border-radius: 10px;
+            background: #141312;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .form-group textarea {
+            min-height: 94px;
+            resize: vertical;
+        }
+
+        .form-group select {
+            color-scheme: dark;
+        }
+
+        .form-help {
+            color: var(--muted-dark);
+            font-size: 10px;
+        }
+
+        .profile-form-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            grid-column: 1 / -1;
+            margin-top: 3px;
+        }
+
+        .form-status {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        /* A quiet privacy/product note */
+        .privacy-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+            margin-top: 28px;
+            padding: 15px 17px;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: #191817;
+        }
+
+        .privacy-note-icon {
+            color: var(--accent);
+            font-size: 16px;
+        }
+
+        .privacy-note p {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.8;
+        }
+
+        .privacy-note strong {
+            color: #ded7ce;
+            font-weight: 500;
+        }
+
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 30px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            color: var(--muted-dark);
+            font-size: 10px;
+        }
+
+        .footer-brand {
+            color: #c1b9af;
+            font-weight: 500;
+        }
+
+        /* Tablet layout */
+        @media (max-width: 1150px) {
+            .app { grid-template-columns: 210px minmax(0, 1fr); }
+            .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .card:last-child { grid-column: 1 / -1; }
+        }
+
+        /* Mobile layout */
+        @media (max-width: 760px) {
+            .app { grid-template-columns: 1fr; }
+
+            .sidebar {
+                position: static;
+                height: auto;
+                padding: 15px 17px 10px;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .brand { margin-bottom: 14px; }
+            .nav-label { display: none; }
+
+            .nav-links {
+                display: flex;
+                gap: 5px;
+                padding-bottom: 4px;
+                overflow-x: auto;
+            }
+
+            .nav-item {
+                flex-shrink: 0;
+                gap: 7px;
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+
+            .main { padding: 23px 16px; }
+            .topbar { margin-bottom: 25px; }
+            .hero { padding: 25px 20px; border-radius: 17px; }
+            .hero h3 { font-size: clamp(38px, 10vw, 53px); letter-spacing: -1.5px; }
+            .hero-description { font-size: 12px; }
+
+            .search-form {
+                align-items: stretch;
+                flex-direction: column;
+                gap: 4px;
+                padding: 6px;
+                border-radius: 15px;
+            }
+
+            .search-form input { padding: 12px 10px; }
+            .search-form .button { width: 100%; }
+            .result-panel { padding: 18px; }
+            .section-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
+            .cards { grid-template-columns: 1fr; }
+            .card:last-child { grid-column: auto; }
+            .card { padding: 19px; }
+            .profile-form { grid-template-columns: 1fr; }
+            .form-group.full-width, .profile-form-actions { grid-column: auto; }
+            .footer { align-items: flex-start; flex-direction: column; }
+        }
+
+        /* Respect reduced-motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Main navigation sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon" aria-hidden="true">C</div>
+                <div>
+                    <h1>CareerPilot</h1>
+                    <p>Your AI career companion</p>
+                </div>
+            </div>
+
+            <p class="nav-label">workspace</p>
+            <nav class="nav-links" aria-label="Main navigation">
+                <a class="nav-item active" href="#dashboard">
+                    <span class="nav-icon" aria-hidden="true">⌂</span> Dashboard
+                </a>
+                <a class="nav-item" href="#advisor">
+                    <span class="nav-icon" aria-hidden="true">✳</span> AI Career Advisor
+                </a>
+                <a class="nav-item" href="#profile-assessment">
+                    <span class="nav-icon" aria-hidden="true">◎</span> Career Assessment
+                </a>
+                <a class="nav-item" href="#explore">
+                    <span class="nav-icon" aria-hidden="true">◇</span> Explore Careers
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main dashboard -->
+        <main class="main" id="dashboard">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">career clarity, by design</p>
+                    <h2>Discover your next move.</h2>
+                    <p class="topbar-description">A clearer view of your skills, your options, and what comes next.</p>
+                </div>
+                <div class="avatar" aria-label="CareerPilot profile">CP</div>
+            </header>
+
+            <!-- Primary AI question area -->
+            <section class="hero" id="explore">
+                <div class="hero-inner">
+                    <div class="hero-badge">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        Your AI-powered career companion
+                    </div>
+                    <h3>Your potential is bigger than your <em>current role.</em></h3>
+                    <p class="hero-description">
+                        Explore technology careers, understand the skills you need, and find practical ways to move forward.
+                    </p>
+
+                    <label class="search-label" for="career-query">What would you like help with today?</label>
+                    <form class="search-form" id="career-search">
+                        <input
+                            id="career-query"
+                            type="text"
+                            placeholder="e.g. How do I become a data engineer?"
+                            aria-label="Ask CareerPilot a career question"
+                            autocomplete="off"
+                            required
+                        >
+                        <button class="button" id="submit-button" type="submit">
+                            <span id="submit-label">Ask CareerPilot</span>
+                            <span aria-hidden="true">→</span>
+                        </button>
+                    </form>
+
+                    <div class="suggestions" aria-label="Suggested questions">
+                        <span class="suggestions-label">Try asking:</span>
+                        <button class="suggestion" type="button" data-question="What does a data analyst do?">What does a data analyst do?</button>
+                        <button class="suggestion" type="button" data-question="What skills do I need to become an AI engineer?">AI engineering skills</button>
+                        <button class="suggestion" type="button" data-question="How can I transition into tech?">Transition into tech</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI answer appears below the question area -->
+            <section
+                class="result-panel"
+                id="result-panel"
+                aria-live="polite"
+                aria-busy="false"
+                aria-labelledby="result-title"
+            >
+                <div class="result-heading">
+                    <div class="result-icon" aria-hidden="true">✳</div>
+                    <div class="result-heading-text">
+                        <p class="result-eyebrow">CareerPilot AI</p>
+                        <h3 id="result-title">Your response</h3>
+                    </div>
+                </div>
+                <div class="result-content" id="result-content"></div>
+                <div class="result-footer">
+                    <p class="result-note" id="result-note">Responses are based on CareerPilot's available capabilities.</p>
+                    <button class="copy-button" id="copy-button" type="button" hidden>Copy response</button>
+                </div>
+            </section>
+
+            <!-- Career toolkit -->
+            <section class="toolkit" id="toolkit" aria-labelledby="toolkit-title">
+                <div class="section-heading">
+                    <div>
+                        <p class="section-eyebrow">explore your options</p>
+                        <h3 id="toolkit-title">Your career toolkit</h3>
+                        <p>Tools to help you make your next move with intention.</p>
+                    </div>
+                    <span class="section-caption">YOUR NEXT CHAPTER</span>
+                </div>
+
+                <div class="cards">
+                    <article class="card" id="advisor">
+                        <div class="card-icon" aria-hidden="true">💬</div>
+                        <h4>AI Career Advisor</h4>
+                        <p>Ask about technology careers, essential skills, learning paths, and career opportunities.</p>
+                        <button class="card-link" type="button" data-question="What technology careers are available, and what do they involve?">
+                            Ask a question <span aria-hidden="true">→</span>
+                        </button>
+                    </article>
+
+                    <article class="card" id="assessment">
+                        <div class="card-icon" aria-hidden="true">🎯</div>
+                        <h4>Career-Fit Assessment</h4>
+                        <p>Explore how your background, skills, and experience may align with a technology career.</p>
+                        <a class="card-link" href="#profile-assessment">Start assessment <span aria-hidden="true">→</span></a>
+                    </article>
+
+                    <article class="card">
+                        <div class="card-icon" aria-hidden="true">🧭</div>
+                        <h4>Explore Career Paths</h4>
+                        <p>Discover career roles, responsibilities, required skills, and possible progression routes.</p>
+                        <button class="card-link" type="button" data-question="Explain the differences between data analyst, data engineer, business analyst, and AI engineer.">
+                            Explore careers <span aria-hidden="true">→</span>
+                        </button>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Collect the user's background for a personalized assessment -->
+            <section class="profile-section" id="profile-assessment" aria-labelledby="profile-title">
+                <div class="section-heading">
+                    <div>
+                        <p class="section-eyebrow">personalized guidance</p>
+                        <h2 id="profile-title">Career Profile &amp; Assessment</h2>
+                        <p>Share your background to explore how your skills align with your target technology career.</p>
+                    </div>
+                </div>
+
+                <div class="profile-card">
+                    <form class="profile-form" id="profile-form">
+                        <div class="form-group">
+                            <label for="profile-name">Full name</label>
+                            <input id="profile-name" name="name" type="text" autocomplete="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-role">Current role</label>
+                            <input id="profile-role" name="current_role" type="text" placeholder="e.g. Customer service officer" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-experience">Years of experience</label>
+                            <input id="profile-experience" name="years_of_experience" type="number" min="0" step="1" value="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profile-industry">Current industry</label>
+                            <input id="profile-industry" name="industry" type="text" placeholder="e.g. Banking, education, retail" required>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profile-education">Education</label>
+                            <input id="profile-education" name="education" type="text" placeholder="Separate entries with commas" required>
+                            <span class="form-help">Example: BSc Computer Science, MSc Data Science</span>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profile-skills">Skills</label>
+                            <textarea id="profile-skills" name="skills" rows="3" placeholder="e.g. Excel, communication, SQL" required></textarea>
+                            <span class="form-help">Separate skills with commas.</span>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profile-certifications">Certifications</label>
+                            <input id="profile-certifications" name="certifications" type="text" placeholder="e.g. PL-300, Azure Fundamentals">
+                            <span class="form-help">Optional. Separate certifications with commas, or leave blank.</span>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profile-goal">Career goal</label>
+                            <textarea id="profile-goal" name="career_goal" rows="3" placeholder="What would you like to achieve in your career?" required></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profile-target">Target career</label>
+                            <select id="profile-target" name="target_role" required>
+                                <option value="">Select a career</option>
+                                <option value="Data Analyst">Data Analyst</option>
+                                <option value="Data Engineer">Data Engineer</option>
+                                <option value="Business Analyst">Business Analyst</option>
+                                <option value="AI Engineer">AI Engineer</option>
+                            </select>
+                        </div>
+
+                        <div class="profile-form-actions">
+                            <button class="primary-button" id="assessment-submit" type="submit">Assess my career fit <span aria-hidden="true">→</span></button>
+                            <span class="form-status" id="profile-status" aria-live="polite"></span>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Set expectations about the assistant -->
+            <aside class="privacy-note">
+                <span class="privacy-note-icon" aria-hidden="true">✦</span>
+                <p>
+                    <strong>Make your next move with clarity.</strong>
+                    CareerPilot can help you explore options and plan your learning. Recommendations depend on the information and capabilities available to the application.
+                </p>
+            </aside>
+
+            <footer class="footer">
+                <span class="footer-brand">CareerPilot · Navigate your future with confidence.</span>
+                <span>AI-assisted career exploration</span>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // Get the elements used for asking questions and showing responses
+        const careerSearchForm = document.getElementById("career-search");
+        const careerQueryInput = document.getElementById("career-query");
+        const submitButton = document.getElementById("submit-button");
+        const submitLabel = document.getElementById("submit-label");
+        const resultPanel = document.getElementById("result-panel");
+        const resultTitle = document.getElementById("result-title");
+        const resultContent = document.getElementById("result-content");
+        const resultNote = document.getElementById("result-note");
+        const copyButton = document.getElementById("copy-button");
+        const profileForm = document.getElementById("profile-form");
+        const assessmentSubmit = document.getElementById("assessment-submit");
+        const profileStatus = document.getElementById("profile-status");
+
+        // Store the latest response so users can copy it
+        let latestResponse = "";
+
+        // Display plain text safely and reveal the response pane
+        function showResult(title, content, state = "normal") {
+            resultTitle.textContent = title;
+            resultContent.textContent = content;
+            resultContent.className = "result-content";
+
+
+            // Apply the appropriate visual style for each result state.
+            if (state === "error") resultContent.classList.add("error");
+            if (state === "loading") resultContent.classList.add("loading");
+            if (state === "review") resultContent.classList.add("review");
+
+            resultPanel.classList.add("visible");
+            resultPanel.setAttribute("aria-busy", String(state === "loading"));
+            resultNote.textContent = state === "error"
+                ? "Please review the message above and try again."
+                : "CareerPilot's response may depend on the information available to it.";
+            copyButton.hidden = state !== "normal" || !latestResponse;
+
+            resultPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        // Toggle the main question button while a request is running
+        function setQuestionLoading(isLoading) {
+            submitButton.disabled = isLoading;
+            submitLabel.textContent = isLoading ? "Working..." : "Ask CareerPilot";
+        }
+
+        // Preserve incomplete profile details across conversational requests
+        let pendingCareerProfile = null;
+
+        // Call the existing FastAPI agent endpoint for a general career question
+        async function askCareerPilot(question) {
+            const cleanQuestion = question.trim();
+
+            if (!cleanQuestion) {
+                careerQueryInput.focus();
+                return;
+            }
+
+            // Clear the input after capturing the submitted question
+            careerQueryInput.value = "";
+
+            // Reset the previous response and hide the copy button
+            latestResponse = "";
+            copyButton.hidden = true;
+            setQuestionLoading(true);
+            showResult("Preparing your answer...", "CareerPilot is processing your question. Please wait.", "loading");
+
+            try {
+                // Send the request to the existing agent endpoint
+                const response = await fetch("/agent", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        request: cleanQuestion,
+                        pending_profile: pendingCareerProfile
+                    })
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                // Preserve missing profile details or clear them when collection is complete
+                pendingCareerProfile = data.pending_profile ?? null;
+
+                if (!response.ok) {
+                    throw new Error(data.detail || `The request failed with status ${response.status}.`);
+                }
+
+                const answer = data.response;
+                if (typeof answer !== "string" || !answer.trim()) {
+                    throw new Error("CareerPilot returned an empty response.");
+                }
+
+                 // Parse the agent's response so career assessments can use the dashboard.
+                let assessment;
+
+                try {
+                    assessment = JSON.parse(answer);
+                } catch (error) {
+                    // Ordinary text responses do not need dashboard rendering.
+                    assessment = null;
+                }
+
+                // Keep a readable version for the copy-response feature.
+                latestResponse = formatAssessmentAnswer(answer);
+
+                // Handle requests that require human review.
+                if (data.review_status === "pending") {
+                    const reviewNotice = data.review_id
+                        ? `Review ID: ${data.review_id}. This assessment is awaiting human review.`
+                        : "This assessment is awaiting human review.";
+
+                    if (assessment && assessment.target_role) {
+                        // Render the assessment dashboard when structured data is available.
+                        showAssessmentResult(
+                            "Assessment awaiting human review",
+                            answer
+                        );
+
+                        // Keep the review status visible on the dashboard.
+                        resultNote.textContent = reviewNotice;
+                    } else {
+                        // Display the review notice when the response is not an assessment.
+                        showResult(
+                            "Human review required",
+                            reviewNotice,
+                            "review"
+                        );
+                    }
+                } else if (assessment && assessment.target_role) {
+                    // Display structured career assessments as a dashboard.
+                    showAssessmentResult(
+                        "CareerPilot's career assessment",
+                        answer
+                    );
+                } else {
+                    // Preserve readable text for ordinary career questions.
+                    showResult(
+                        "CareerPilot's response",
+                        formatAssessmentAnswer(answer),
+                        "normal"
+                    );
+                }
+            } catch (error) {
+                // Keep technical details in the browser console and show a friendly message
+                console.error("CareerPilot request failed:", error);
+                const message = error instanceof TypeError
+                    ? "CareerPilot could not connect to the server. Check that the FastAPI application is running and try again."
+                    : "CareerPilot could not complete your request. Please try again.";
+                showResult("We couldn't complete that request", message, "error");
+            } finally {
+                setQuestionLoading(false);
+            }
+        }
+
+        // Submit a general career question
+        careerSearchForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            await askCareerPilot(careerQueryInput.value);
+        });
+
+        // Fill the question box when a suggested question is clicked
+        document.querySelectorAll("[data-question]").forEach((button) => {
+            button.addEventListener("click", () => {
+                // Put the selected suggestion into the input without submitting it
+                careerQueryInput.value = button.dataset.question;
+
+                // Move the cursor to the input so the user can review or edit the question
+                careerQueryInput.focus();
+            });
+        });
+
+        // Convert comma-separated form fields into clean string arrays
+        function splitList(value) {
+            return value.split(",").map((item) => item.trim()).filter(Boolean);
+        }
+
+
+
+        // Render the career assessment as a structured dashboard.
+        function showAssessmentResult(title, answer) {
+            const resultTitle = document.getElementById("result-title");
+            const resultContent = document.getElementById("result-content");
+
+            // Stop safely if the result elements do not exist.
+            if (!resultTitle || !resultContent) {
+                console.error("Career assessment result elements were not found.");
+                return;
+            }
+
+            // Parse the assessment if the API returned JSON text.
+            let assessment;
+            try {
+                assessment = typeof answer === "string" ? JSON.parse(answer) : answer;
+            } catch (error) {
+                console.error("Could not parse career assessment:", error);
+                resultTitle.textContent = title;
+                resultContent.textContent = answer;
+                return;
+            }
+
+            // Fall back to readable text if the response is not structured data.
+            if (!assessment || !assessment.target_role) {
+                resultTitle.textContent = title;
+                resultContent.textContent =
+                    typeof answer === "string" ? answer : JSON.stringify(answer, null, 2);
+                return;
+            }
+
+            // Display the structured assessment without inserting raw HTML.
+            resultTitle.textContent = title;
+            resultContent.className = "result-content assessment-result";
+
+            const section = (heading, items) => {
+                const container = document.createElement("section");
+                container.className = "assessment-skill-group";
+
+                const headingElement = document.createElement("h3");
+                headingElement.textContent = heading;
+                container.appendChild(headingElement);
+
+                const list = document.createElement("ul");
+
+                // Support either an array of strings or an empty/missing list.
+                (Array.isArray(items) ? items : []).forEach(item => {
+                    const listItem = document.createElement("li");
+                    listItem.textContent =
+                        typeof item === "string" ? item : JSON.stringify(item);
+                    list.appendChild(listItem);
+                });
+
+                container.appendChild(list);
+                return container;
+            };
+
+            // Clear the previous result before rendering the new assessment.
+            resultContent.replaceChildren();
+
+            const roleHeading = document.createElement("h2");
+            roleHeading.textContent = assessment.target_role;
+            resultContent.appendChild(roleHeading);
+
+            if (assessment.fit_score !== undefined) {
+                const score = document.createElement("p");
+                score.textContent = `Fit score: ${assessment.fit_score}%`;
+                resultContent.appendChild(score);
+            }
+
+            resultContent.appendChild(
+                section("Matched Skills", assessment.matched_skills)
+            );
+            resultContent.appendChild(
+                section("Skills to Develop", assessment.skills_to_develop)
+            );
+            resultContent.appendChild(
+                section("Matched Preferred Skills", assessment.matched_preferred_skills)
+            );
+        }
+
+        // Format JSON analysis returned as a string into a readable plain-text result
+        function formatAssessmentAnswer(answer) {
+            try {
+                const parsed = JSON.parse(answer);
+
+                // Handle the CareerAnalysis shape returned by the current backend
+                if (parsed && typeof parsed === "object") {
+                    const lines = [];
+                    if (parsed.target_role) lines.push(`TARGET CAREER: ${parsed.target_role}`);
+                    if (parsed.fit_score !== undefined) lines.push(`FIT SCORE: ${parsed.fit_score}`);
+                    if (parsed.recommendation) lines.push(`RECOMMENDATION\n${parsed.recommendation}`);
+                    if (parsed.career_explanation) lines.push(`ASSESSMENT\n${parsed.career_explanation}`);
+                    if (parsed.matched_skills?.length) lines.push(`MATCHED SKILLS\n• ${parsed.matched_skills.join("\n• ")}`);
+                    if (parsed.missing_skills?.length) lines.push(`SKILLS TO DEVELOP\n• ${parsed.missing_skills.join("\n• ")}`);
+
+                    if (lines.length) return lines.join("\n\n");
+                }
+            } catch (error) {
+                // If the response is not JSON, show the original response unchanged
+            }
+
+            return answer;
+        }
+
+        // Convert a JSON career assessment into readable, structured text.
+        function formatAssessmentAnswer(answer) {
+            try {
+                // Parse the JSON response returned by the agent.
+                const parsed = JSON.parse(answer);
+
+                // Format career assessments with the expected fields.
+                if (
+                    parsed &&
+                    typeof parsed === "object" &&
+                    parsed.target_role
+                ) {
+                    const lines = [];
+
+                    // Show the selected career and fit score.
+                    lines.push(`TARGET CAREER\n${parsed.target_role}`);
+
+                    if (parsed.fit_score !== undefined) {
+                        lines.push(`CAREER FIT SCORE\n${parsed.fit_score}%`);
+                    }
+
+                    // Explain the recommendation and career assessment.
+                    if (parsed.recommendation) {
+                        lines.push(`RECOMMENDATION\n${parsed.recommendation}`);
+                    }
+
+                    const overview =
+                        parsed.career_explanation ||
+                        parsed.career_information?.description;
+
+                    if (overview) {
+                        lines.push(`CAREER OVERVIEW\n${overview}`);
+                    }
+
+                    // List skills that already match the target career.
+                    if (parsed.matched_skills?.length) {
+                        lines.push(
+                            `MATCHED SKILLS\n• ${parsed.matched_skills.join("\n• ")}`
+                        );
+                    }
+
+                    // List skills the user should develop.
+                    if (parsed.missing_skills?.length) {
+                        lines.push(
+                            `SKILLS TO DEVELOP\n• ${parsed.missing_skills.join("\n• ")}`
+                        );
+                    }
+
+                    // Include preferred skills separately from required skills.
+                    if (parsed.matched_preferred_skills?.length) {
+                        lines.push(
+                            `PREFERRED SKILLS YOU HAVE\n• ${
+                                parsed.matched_preferred_skills.join("\n• ")
+                            }`
+                        );
+                    }
+
+                    // Suggest an actionable next step when skills are missing.
+                    if (parsed.missing_skills?.length) {
+                        lines.push(
+                            "SUGGESTED NEXT STEP\n" +
+                            `Start by developing ${parsed.missing_skills.slice(0, 3).join(", ")}. ` +
+                            "Prioritize one skill at a time and build a practical project."
+                        );
+                    }
+
+                    return lines.join("\n\n");
+                }
+            } catch (error) {
+                // Keep ordinary non-JSON responses readable.
+            }
+
+            // Return normal career answers unchanged.
+            return answer;
+        }
+
+
+        // Submit the user's profile to the existing /agent endpoint for assessment
+        profileForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(profileForm);
+            const targetRole = String(formData.get("target_role") || "").trim();
+
+            // Match the required CareerProfile fields in the FastAPI request model
+            const profile = {
+                name: String(formData.get("name") || "").trim(),
+                current_role: String(formData.get("current_role") || "").trim(),
+                years_of_experience: Number(formData.get("years_of_experience")),
+                education: splitList(String(formData.get("education") || "")),
+                skills: splitList(String(formData.get("skills") || "")),
+                certifications: splitList(String(formData.get("certifications") || "")),
+                industry: String(formData.get("industry") || "").trim(),
+                career_goal: String(formData.get("career_goal") || "").trim()
+            };
+
+            if (!profile.skills.length || !profile.education.length) {
+                profileStatus.textContent = "Please enter at least one education entry and one skill.";
+                return;
+            }
+
+            // Show loading feedback and prevent duplicate assessment submissions
+            assessmentSubmit.disabled = true;
+            assessmentSubmit.textContent = "Assessing your profile...";
+            profileStatus.textContent = "Analyzing your background and target career.";
+            latestResponse = "";
+            copyButton.hidden = true;
+            showResult("Preparing your career assessment...", "CareerPilot is reviewing your profile. Please wait.", "loading");
+
+            try {
+                // The request includes a trigger phrase and the selected target career
+                const response = await fetch("http://localhost:8000/agent", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        request: `Assess my career fit for ${targetRole}`,
+                        profile
+                    })
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    const detail = typeof data.detail === "string"
+                        ? data.detail
+                        : "The assessment request failed. Please check your entries and try again.";
+                    throw new Error(detail);
+                }
+
+                const answer = data.response;
+                if (typeof answer !== "string" || !answer.trim()) {
+                    throw new Error("CareerPilot returned an empty assessment.");
+                }
+
+
+                // Parse the agent's JSON response into the structured assessment.
+                let assessment;
+                try {
+                    assessment = JSON.parse(answer);
+                    console.log("CareerPilot assessment:", assessment);
+                } catch {
+                    assessment = null;
+                }
+
+                // Render the structured dashboard when the response contains career data.
+                if (assessment && assessment.target_role) {
+                    showAssessmentResult(
+                        `Career assessment: ${targetRole}`,
+                        answer
+                    );
+                } else {
+                // Render career assessments as a structured dashboard.
+                let assessment;
+
+                try {
+                    assessment = JSON.parse(answer);
+                } catch (error) {
+                    // Keep non-JSON responses readable.
+                    assessment = null;
+                }
+
+                if (assessment && assessment.target_role) {
+                    // Show the dashboard for valid career assessment results.
+                    showAssessmentResult("CareerPilot's response", answer);
+                } else {
+                    // Display ordinary answers as readable text.
+                    showResult(
+                    "CareerPilot's response",
+                    formatAssessmentAnswer(answer),
+                    "normal"
+                    );
+                }
+                }
+
+                // Mark the profile assessment as complete.
+                profileStatus.textContent = "Assessment complete.";
+            } catch (error) {
+                // Keep diagnostic details out of the visible UI
+                console.error("Career assessment failed:", error);
+                const message = error instanceof TypeError
+                    ? "CareerPilot could not connect to the server. Check that the FastAPI application is running and try again."
+                    : "CareerPilot could not complete the assessment. Please try again.";
+                showResult("Assessment unavailable", message, "error");
+                profileStatus.textContent = "Assessment could not be completed.";
+            } finally {
+                // Restore the submit button after the request completes
+                assessmentSubmit.disabled = false;
+                assessmentSubmit.innerHTML = 'Assess my career fit <span aria-hidden="true">→</span>';
+            }
+        });
+
+        // Copy the latest completed answer when the browser permits clipboard access
+        copyButton.addEventListener("click", async () => {
+            if (!latestResponse) return;
+
+            try {
+                await navigator.clipboard.writeText(latestResponse);
+                copyButton.textContent = "Copied!";
+                window.setTimeout(() => {
+                    copyButton.textContent = "Copy response";
+                }, 1600);
+            } catch (error) {
+                console.error("Unable to copy the response:", error);
+                copyButton.textContent = "Unable to copy";
+            }
+        });
+
+        // Keep the active navigation style aligned with the selected section
+        document.querySelectorAll(".nav-item[href^='#']").forEach((link) => {
+            link.addEventListener("click", () => {
+                document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+                link.classList.add("active");
+            });
+        });
+    </script>
+</body>
+</html>

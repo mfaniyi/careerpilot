@@ -303,3 +303,40 @@ def test_lookup_exception_during_analysis_fails_safely():
 
     # Verify that internal error details are not exposed
     assert "database connection details" not in result.final_response.lower()
+
+
+    
+# Test that an unspecified target career is selected from the profile goal
+def test_career_fit_uses_profile_career_goal():
+    agent = CareerPilotAgent()
+
+    # Ask for a recommendation without naming a specific target role
+    result = agent.run(
+        "Which tech career is best for me?",
+        profile=candidate,
+    )
+
+    # Verify that the stated AI Engineering goal determines the target role
+    import json
+    analysis = json.loads(result.final_response)
+
+    assert analysis["target_role"] == "AI Engineer"
+
+
+
+# Test that an explicitly requested role overrides the profile goal
+def test_explicit_career_request_overrides_profile_goal():
+    agent = CareerPilotAgent()
+
+    # Explicitly request Data Engineer despite the AI Engineering goal
+    result = agent.run(
+        "How suitable am I for Data Engineer?",
+        profile=candidate,
+    )
+
+    # Parse the structured career analysis
+    import json
+    analysis = json.loads(result.final_response)
+
+    # Verify that the explicitly requested role takes priority
+    assert analysis["target_role"] == "Data Engineer"

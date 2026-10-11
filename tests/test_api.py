@@ -7,17 +7,31 @@ from careerpilot.api import app
 client = TestClient(app)
 
 
-# Test that the API health-check endpoint works
+
+# Test that the root endpoint serves the CareerPilot frontend
 def test_root_endpoint() -> None:
+    """Verify that the frontend is served from the root URL."""
+
+    # Request the root URL
+    response = client.get("/")
+
+    # Verify the frontend response
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "<html" in response.text.lower()
+
+
+# Test that the API health-check endpoint works
+def test_health_endpoint() -> None:
     """Verify that the API reports a healthy status."""
 
-    # Send a GET request to the root endpoint
-    response = client.get("/")
+    # Request the dedicated health-check endpoint
+    response = client.get("/health")
 
     # Verify the HTTP response
     assert response.status_code == 200
 
-    # Verify the response content
+    # Verify the health-check response content
     assert response.json() == {
         "message": "CareerPilot API is running",
         "status": "healthy",
@@ -78,9 +92,14 @@ def test_predict_endpoint() -> None:
 
     # Verify the prediction values
     assert result["target_role"] == "AI Engineer"
-    assert result["score"] == 33.33
-    assert result["matched_skills"] == ["Python"]
-    assert result["missing_skills"] == ["APIs", "Machine Learning"]
+    assert result["score"] == 20.0
+    assert result["matched_preferred_skills"] == []
+    assert result["missing_skills"] == [
+        "APIs",
+        "Data Modelling",
+        "Machine Learning",
+        "SQL",
+    ]
 
 
 # Test that the /lookup endpoint returns structured career information
@@ -105,12 +124,13 @@ def test_lookup_endpoint() -> None:
     # Verify that the career was found
     assert result["found"] is True
 
-    # Verify the returned career
-    assert result["career"]["role"] == "AI Engineer"
+    # Verify the updated AI Engineer required skills.
     assert result["career"]["required_skills"] == [
         "Python",
         "Machine Learning",
         "APIs",
+        "Data Modelling",
+        "SQL",
     ]
 
 
@@ -175,6 +195,16 @@ def test_agent_endpoint() -> None:
     # Verify that human review was triggered
     assert result["human_review_required"] is True
 
+    
+    # Verify that the assessment is awaiting human review.
+    assert result["review_status"] == "pending"
+
+    # Verify that the assessment has a unique review identifier.
+    assert result["review_id"] is not None
+
+    # Verify that the assessment is preserved for review.
+    assert result["pending_review"] is not None
+
     # Verify the tool execution order
     assert [step["tool"] for step in result["tool_steps"]] == [
         "lookup",
@@ -183,7 +213,7 @@ def test_agent_endpoint() -> None:
     ]
 
     # Verify the prediction was included in the final response
-    assert "33.33" in result["response"]
+    assert "20.0" in result["response"]
 
 
 # Test that the /agent endpoint safely refuses out-of-scope requests
@@ -320,3 +350,206 @@ def test_agent_endpoint_rejects_invalid_profile():
 
     # Pydantic should reject the invalid years_of_experience value
     assert response.status_code == 422
+
+
+
+# Test that a reviewer can approve an assessment awaiting review.
+def test_agent_review_approval() -> None:
+    # Create a career-fit assessment that requires human review.
+    agent_response = client.post(
+        "/agent",
+        json={
+            "request": "How suitable am I for AI Engineer?",
+            "profile": {
+                "name": "Michael",
+                "current_role": "Data Analyst",
+                "years_of_experience": 5,
+                "education": ["MSc GIS"],
+                "skills": ["Python"],
+                "certifications": ["PL-300"],
+                "industry": "Technology",
+                "career_goal": "Become an AI Engineer",
+            },
+        },
+    )
+
+    # Verify that the assessment was created successfully.
+    assert agent_response.status_code == 200
+
+    # Retrieve the unique ID assigned to the pending assessment.
+    agent_result = agent_response.json()
+    review_id = agent_result["review_id"]
+
+    # Verify that the assessment is waiting for review.
+    assert agent_result["review_status"] == "pending"
+    assert review_id is not None
+
+    # Submit the reviewer's approval decision.
+    review_response = client.post(
+        "/agent/review",
+        json={
+            "review_id": review_id,
+            "decision": "approve",
+        },
+    )
+
+    # Verify that the approval was accepted.
+    assert review_response.status_code == 200
+
+    # Verify that the review status and assessment are returned.
+    review_result = review_response.json()
+    assert review_result["review_status"] == "approved"
+    assert review_result["assessment"] is not None
+    assert review_result["message"] == "Assessment approved."
+
+
+
+# Test that a reviewer can reject an assessment awaiting review.
+def test_agent_review_rejection() -> None:
+    # Create a career-fit assessment that requires human review.
+    agent_response = client.post(
+        "/agent",
+        json={
+            "request": "How suitable am I for AI Engineer?",
+            "profile": {
+                "name": "Michael",
+                "current_role": "Data Analyst",
+                "years_of_experience": 5,
+                "education": ["MSc GIS"],
+                "skills": ["Python"],
+                "certifications": ["PL-300"],
+                "industry": "Technology",
+                "career_goal": "Become an AI Engineer",
+            },
+        },
+    )
+
+    # Verify that the assessment was created successfully.
+    assert agent_response.status_code == 200
+
+    # Retrieve the unique ID assigned to the pending assessment.
+    agent_result = agent_response.json()
+    review_id = agent_result["review_id"]
+
+    # Submit the reviewer's rejection decision.
+    review_response = client.post(
+        "/agent/review",
+        json={
+            "review_id": review_id,
+            "decision": "reject",
+        },
+    )
+
+    # Verify that the rejection was accepted.
+    assert review_response.status_code == 200
+
+    # Verify that the assessment was rejected and withheld.
+    review_result = review_response.json()
+    assert review_result["review_status"] == "rejected"
+    assert review_result["assessment"] is None
+    assert review_result["message"] == "Assessment rejected."
+
+
+
+# Test that an unknown review ID returns a 404 response.
+def test_agent_review_unknown_id() -> None:
+    # Submit a decision for a review ID that does not exist.
+    response = client.post(
+        "/agent/review",
+        json={
+            "review_id": "unknown-review-id",
+            "decision": "approve",
+        },
+    )
+
+    # Verify that the API reports the missing review.
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Review ID not found."
+
+
+
+# Test that a reviewed assessment cannot receive a second decision.
+def test_agent_review_duplicate_decision() -> None:
+    # Create an assessment that requires human review.
+    agent_response = client.post(
+        "/agent",
+        json={
+            "request": "How suitable am I for AI Engineer?",
+            "profile": {
+                "name": "Michael",
+                "current_role": "Data Analyst",
+                "years_of_experience": 5,
+                "education": ["MSc GIS"],
+                "skills": ["Python"],
+                "certifications": ["PL-300"],
+                "industry": "Technology",
+                "career_goal": "Become an AI Engineer",
+            },
+        },
+    )
+
+    # Retrieve the ID of the pending assessment.
+    assert agent_response.status_code == 200
+    review_id = agent_response.json()["review_id"]
+
+    # Submit the first decision and verify it succeeds.
+    first_response = client.post(
+        "/agent/review",
+        json={"review_id": review_id, "decision": "approve"},
+    )
+    assert first_response.status_code == 200
+
+    # Attempt to reject the same assessment a second time.
+    second_response = client.post(
+        "/agent/review",
+        json={"review_id": review_id, "decision": "reject"},
+    )
+
+    # Verify that the API prevents the second decision.
+    assert second_response.status_code == 409
+    assert (
+        second_response.json()["detail"]
+        == "This assessment has already been reviewed."
+    )
+
+
+
+# Verify preferred skills are matched without changing the required-skill score.
+def test_predict_endpoint_matches_preferred_skills() -> None:
+    # Create a profile with required and preferred AI Engineer skills.
+    profile = {
+        "name": "Michael",
+        "current_role": "Data Analyst",
+        "years_of_experience": 5,
+        "education": ["MSc GIS"],
+        "skills": ["Python", "ETL", "Cloud", "Docker"],
+        "certifications": ["PL-300"],
+        "industry": "Technology",
+        "career_goal": "Become an AI Engineer",
+    }
+
+    # Request a career-fit prediction from the API.
+    response = client.post(
+        "/predict",
+        json={
+            "profile": profile,
+            "target_role": "AI Engineer",
+        },
+    )
+
+    # Confirm the prediction succeeded.
+    assert response.status_code == 200
+
+    # Read the prediction returned by the API.
+    result = response.json()
+
+    # Only Python matches the five required skills.
+    assert result["score"] == 20.0
+    assert result["matched_skills"] == ["Python"]
+
+    # Preferred skills are reported separately in alphabetical order.
+    assert result["matched_preferred_skills"] == [
+        "Cloud",
+        "Docker",
+        "ETL",
+    ]

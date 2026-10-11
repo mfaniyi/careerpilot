@@ -10,14 +10,15 @@ class CareerFitRequest(BaseModel):
     target_role: str
 
 
-# Defines the prediction returned by the tool
+
+# Defines the structured prediction returned by the tool.
 class CareerFitPrediction(BaseModel):
     target_role: str
     score: float = Field(ge=0, le=100)
     matched_skills: list[str]
     missing_skills: list[str]
+    matched_preferred_skills: list[str] = []
     recommendation: str
-
 
 # Calculate how well a career profile matches a target career
 def predict_career_fit(request: CareerFitRequest) -> CareerFitPrediction:
@@ -40,6 +41,10 @@ def predict_career_fit(request: CareerFitRequest) -> CareerFitPrediction:
     # Normalize skills for case-insensitive comparison
     user_skills = {skill.lower() for skill in request.profile.skills}
     required_skills = {skill.lower() for skill in career.required_skills}
+    # Debug the profile skills received by the prediction function.
+    print("DEBUG - Target role:", request.target_role)
+    print("DEBUG - Profile skills:", request.profile.skills)
+    print("DEBUG - Normalized user skills:", user_skills)
 
     # Identify skills the candidate already has
     matched_skills = sorted(
@@ -49,6 +54,18 @@ def predict_career_fit(request: CareerFitRequest) -> CareerFitPrediction:
     # Identify required skills the candidate is missing
     missing_skills = sorted(
         skill for skill in career.required_skills if skill.lower() not in user_skills
+    )
+
+    # Normalize preferred skills for case-insensitive comparison.
+    preferred_skills = {
+        skill.lower() for skill in career.preferred_skills
+    }
+
+    # Identify preferred skills the candidate already has.
+    matched_preferred_skills = sorted(
+        skill
+        for skill in career.preferred_skills
+        if skill.lower() in user_skills
     )
 
     # Calculate the percentage of required skills already matched
@@ -68,5 +85,6 @@ def predict_career_fit(request: CareerFitRequest) -> CareerFitPrediction:
         score=score,
         matched_skills=matched_skills,
         missing_skills=missing_skills,
+        matched_preferred_skills=matched_preferred_skills,
         recommendation=recommendation,
     )
