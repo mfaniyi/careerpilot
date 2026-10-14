@@ -32,9 +32,11 @@ jobs:
         with:
           python-version: "3.14"
 
-      # Install UV for dependency management.
+      # Install UV without caching dependencies.
       - name: Install UV
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: false
 
       # Install dependencies using the committed lockfile.
       - name: Install dependencies
