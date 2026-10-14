@@ -1,0 +1,63 @@
+
+# Run CareerPilot's formal tests on pushes, pull requests, or manually.
+name: CareerPilot Tests
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or commit SHA to test"
+        required: false
+        default: "master"
+
+jobs:
+  test:
+    # Use a clean Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the requested revision or the triggering commit.
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      # Install the Python version required by the project.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      # Install UV for dependency management.
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+
+      # Install dependencies using the committed lockfile.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      # Start the API required by integration tests.
+      - name: Start CareerPilot API
+        run: |
+          uv run uvicorn careerpilot.api:app --host 127.0.0.1 --port 8000 &
+          echo $! > uvicorn.pid
+
+      # Wait until the API is healthy.
+      - name: Wait for API
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "CareerPilot API did not become healthy."
+          exit 1
+
+      # Run formal tests, excluding experimental scripts under note/.
+      - name: Run test suite
+        run: uv run pytest tests/ -v
